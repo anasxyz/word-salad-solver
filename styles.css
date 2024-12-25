@@ -3,31 +3,41 @@
 /* General Styling */
 body {
     font-family: "Host Grotesk", sans-serif;
-    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    background: #f5f7fa;
     margin: 0;
     padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+    background: #2c3e50;
+    color: #ecf0f1;
 }
 
 .main-container {
     display: flex;
     justify-content: space-between;
-    width: 80%;
+    width: 90%;
     max-width: 1200px;
+    transition: all 0.3s ease;
 }
 
 .sidebar {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    padding: 20px 30px;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
     width: 25%;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    transition: background-color 0.3s;
+}
+
+body.dark-mode .sidebar {
+    background-color: #34495e;
 }
 
 .left-sidebar {
@@ -39,10 +49,14 @@ body {
 }
 
 h1 {
-    font-size: 2.5rem;
-    color: #333;
-    margin-bottom: 30px;
+    font-size: 2rem;
+    margin-bottom: 20px;
     font-weight: 600;
+    color: #333;
+}
+
+body.dark-mode h1 {
+    color: #ecf0f1;
 }
 
 .grid-container-wrapper {
@@ -50,34 +64,37 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px;
+    padding: 20px;
 }
 
-/* Grid Container */
 #grid-container {
     display: flex;
     flex-direction: column;
-    margin-bottom: 30px;
 }
 
 .grid-row {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .grid-cell {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     text-align: center;
-    font-size: 2.5rem;
-    border: 2px solid #dcdcdc;
-    border-radius: 8px;
-    padding: 8px;
+    font-size: 1.5rem;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    padding: 10px;
     background-color: #f9f9f9;
-    transition: background-color 0.3s ease;
     text-transform: uppercase;
-    margin: 8px;
+    margin: 5px;
+    transition: background-color 0.2s;
+}
+
+body.dark-mode .grid-cell {
+    background-color: #34495e;
+    color: #ecf0f1;
+    border-color: #7f8c8d;
 }
 
 .grid-cell:focus {
@@ -85,29 +102,40 @@ h1 {
     outline: none;
 }
 
+/* body.dark-mode .grid-cell:focus {
+    background-color: #16a085;
+} */
+
 /* Input Fields and Buttons */
 .theme-container, .length-container {
-    margin-bottom: 25px;
-    text-align: left;
-    width: 100%;
+    margin-bottom: 20px;
+    width: 94%;
 }
 
 .theme-container label, .length-container label {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #333;
-    font-weight: 500;
+}
+
+body.dark-mode .theme-container label, body.dark-mode .length-container label {
+    color: #ecf0f1;
 }
 
 .theme-container input, .length-container input {
     width: 100%;
-    padding: 10px;
-    margin-top: 8px;
+    padding: 8px;
+    margin-top: 6px;
     font-size: 1rem;
     border: 1px solid #ccc;
-    border-radius: 8px;
-    box-sizing: border-box;
+    border-radius: 6px;
     background-color: #f7f7f7;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
+    transition: background-color 0.3s;
+}
+
+body.dark-mode .theme-container input, body.dark-mode .length-container input {
+    background-color: #333;
+    color: #ecf0f1;
+    border-color: #34495e;
 }
 
 .theme-container input:focus, .length-container input:focus {
@@ -116,61 +144,90 @@ h1 {
     outline: none;
 }
 
+body.dark-mode .theme-container input:focus, body.dark-mode .length-container input:focus {
+    background-color: #272727;
+}
+
 .btn {
     background-color: #3498db;
     color: white;
-    padding: 12px 18px;
+    padding: 10px 16px;
     border: none;
     border-radius: 6px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     cursor: pointer;
     width: 100%;
-    margin-bottom: 20px;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin-bottom: 15px;
+    transition: background-color 0.2s;
+}
+
+body.dark-mode .btn {
+    background-color: #383838;
 }
 
 .btn:hover {
     background-color: #2980b9;
-    transform: scale(1.05);
+}
+
+body.dark-mode .btn:hover {
+    background-color: #4b4b4b;
 }
 
 .btn:active {
     background-color: #1f6f94;
 }
 
+body.dark-mode .btn:active {
+    background-color: #6d2323;
+}
+
 /* Response Section */
 .response {
-    font-family: "Host Grotesk", sans-serif;
-    text-align: left;
-    font-size: 2rem;
-    color: #333;
-    padding: 0px;
-    /* background-color: #f9f9f9; */
-    /* border-radius: 6px;
-    border: 1px solid #ddd; */
+    font-size: 1.2rem;
+    padding: 0;
     width: 100%;
-    max-height: 450px;
+    max-height: 400px;
     overflow-y: auto;
 }
 
+body.dark-mode .response {
+    background-color: #34495e;
+    color: #ecf0f1;
+}
+
 .response h3 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #3498db;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 /* Spinner style */
 .loading-spinner {
-    border: 4px solid #f3f3f3; /* Light grey background */
-    border-top: 4px solid #3498db; /* Blue top */
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     animation: spin 2s linear infinite;
-    margin: 20px auto;
+    margin: 15px auto;
 }
 
-/* Keyframes for the spinning animation */
+body.dark-mode .loading-spinner {
+    border-top: 4px solid #313131;
+}
+
+h1 {
+    color: #313131;
+}
+
+body.dark-mode h1 {
+    color: #ececec;
+}
+
+body.dark-mode h2 {
+    color: #ececec;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -192,19 +249,15 @@ h1 {
         width: 100%;
     }
 
-    h1 {
-        font-size: 2rem;
-    }
-
     .grid-cell {
-        width: 50px;
-        height: 50px;
-        font-size: 2rem;
+        width: 40px;
+        height: 40px;
+        font-size: 1.3rem;
     }
 
     .btn {
         font-size: 1rem;
-        padding: 10px 15px;
+        padding: 8px 12px;
     }
 
     .theme-container input, .length-container input {

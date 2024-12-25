@@ -151,3 +151,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const solveButton = document.getElementById('solve-btn');
     solveButton.addEventListener('click', solve);
 });
+
+// Toggle dark mode on or off
+function toggleDarkMode() {
+    const body = document.body;
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    // Toggle the dark mode class on the body
+    body.classList.toggle('dark-mode');
+    
+    // Save the current preference in localStorage
+    if (body.classList.contains('dark-mode')) {
+        localStorage.setItem('dark-mode', 'enabled');
+    } else {
+        localStorage.setItem('dark-mode', 'disabled');
+    }
+}
+
+// Check the saved preference on page load and apply the dark mode if enabled
+window.addEventListener('DOMContentLoaded', (event) => {
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    // Retrieve the saved dark mode preference from localStorage
+    const darkModePreference = localStorage.getItem('dark-mode');
+    
+    if (darkModePreference === 'enabled') {
+        document.body.classList.add('dark-mode');
+        darkModeToggle.checked = true;
+    } else {
+        document.body.classList.remove('dark-mode');
+        darkModeToggle.checked = false;
+    }
+});

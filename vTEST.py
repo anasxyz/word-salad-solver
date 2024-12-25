@@ -3,7 +3,6 @@ import requests
 from nltk.corpus import words
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
-from collections import deque
 import time
 
 # Download necessary resources
@@ -21,7 +20,7 @@ grid = [
 valid_words = set(word.lower() for word in words.words())
 valid_words_by_length = {length: set(word for word in valid_words if len(word) == length) for length in range(1, 16)}
 
-# Directions for BFS (up, down, left, right, and diagonals)
+# Directions for grid traversal (up, down, left, right, and diagonals)
 directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
 
 # Function to check if a position is valid in the grid
@@ -67,33 +66,34 @@ trie = Trie()
 for word in valid_words:
     trie.insert(word)
 
-# Function to perform BFS and find words
-def find_words_bfs(x, y, min_length, max_length):
-    found_words = set()
-    queue = deque([(x, y, grid[x][y].lower(), set([(x, y)]))])  # (x, y, current_word, visited)
-    
-    while queue:
-        cx, cy, current_word, visited = queue.popleft()
-        
-        # If the current word is valid, add it to found words
-        if min_length <= len(current_word) <= max_length and trie.search(current_word):
-            found_words.add(current_word)
-        
-        # Prune exploration if the prefix is invalid
-        if len(current_word) > max_length or not trie.starts_with(current_word):
-            continue
+# Precompute valid prefixes for words up to the maximum length
+valid_prefixes = {}
+for word in valid_words:
+    for i in range(1, len(word) + 1):
+        prefix = word[:i]
+        if prefix not in valid_prefixes:
+            valid_prefixes[prefix] = set()
+        valid_prefixes[prefix].add(word)
 
-        # Explore neighbors
-        for dx, dy in directions:
-            nx, ny = cx + dx, cy + dy
-            if is_valid(nx, ny) and (nx, ny) not in visited:
-                visited.add((nx, ny))
-                queue.append((nx, ny, current_word + grid[nx][ny].lower(), visited.copy()))  # Add the next step to the queue
-                visited.remove((nx, ny))  # Remove the visited cell after processing
+# Function to search words using DFS
+def find_words_dfs(x, y, current_word, visited, min_length, max_length, found_words):
+    # If the current word is valid and within the required length range, add it to found words
+    if min_length <= len(current_word) <= max_length and trie.search(current_word):
+        found_words.add(current_word)
 
-    return found_words
+    # Prune if the current prefix is not a valid word start
+    if len(current_word) > max_length or current_word not in valid_prefixes:
+        return
 
-# Function to perform the word search on the grid using BFS
+    # Explore neighbors
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if is_valid(nx, ny) and (nx, ny) not in visited:
+            visited.add((nx, ny))
+            find_words_dfs(nx, ny, current_word + grid[nx][ny].lower(), visited, min_length, max_length, found_words)
+            visited.remove((nx, ny))  # Backtrack
+
+# Function to perform the word search on the grid using multi-threaded DFS
 def word_search(min_length=1, max_length=15):
     global found_words
     found_words = set()
@@ -102,11 +102,11 @@ def word_search(min_length=1, max_length=15):
         futures = []
         for i in range(len(grid)):
             for j in range(len(grid[0])):
-                futures.append(executor.submit(find_words_bfs, i, j, min_length, max_length))
-        
-        # Wait for all the futures to complete
+                futures.append(executor.submit(find_words_dfs, i, j, grid[i][j].lower(), set([(i, j)]), min_length, max_length, found_words))
+
+        # Wait for all futures to complete
         for future in as_completed(futures):
-            found_words.update(future.result())
+            future.result()
 
     return found_words
 
@@ -136,7 +136,7 @@ min_length = 3
 max_length = 16
 theme = "planet"  # The theme to filter words by
 
-# Find words in the grid using BFS
+# Find words in the grid using multi-threaded DFS
 words_found = word_search(min_length, max_length)
 print(f"Words found (length {min_length}-{max_length}):", words_found)
 

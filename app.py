@@ -2,74 +2,100 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import nltk
 from nltk.corpus import words
+import nltk
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 
-# Initialize Flask app
-app = Flask(__name__)
-
-# Enable CORS
-CORS(app)
-
-# Load the word dictionary
+# Download the words corpus if not already downloaded
 nltk.download('words')
-english_words = set(words.words())
 
-def is_valid_word(word):
-    return word.lower() in english_words
+app = Flask(__name__)
+CORS(app)  # Allow cross-origin requests
 
-def get_neighbors(x, y, grid_size):
-    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-    return [(x + dx, y + dy) for dx, dy in directions if 0 <= x + dx < grid_size and 0 <= y + dy < grid_size]
+# Load the NLTK words into a set for faster look-up
+valid_words = set(word.lower() for word in words.words())
+valid_words_by_length = {length: set(word for word in valid_words if len(word) == length) for length in range(1, 16)}
 
-def find_words(grid):
+directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+def is_valid(x, y, grid):
+    return 0 <= x < len(grid) and 0 <= y < len(grid[0])
+
+def find_words(x, y, current_word, visited, min_length, max_length, grid, found_words):
+    if min_length <= len(current_word) <= max_length and current_word in valid_words_by_length[len(current_word)]:
+        found_words.add(current_word)
+
+    if len(current_word) > max_length:
+        return
+  
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if is_valid(nx, ny, grid) and (nx, ny) not in visited:
+            visited.add((nx, ny))
+            find_words(nx, ny, current_word + grid[nx][ny].lower(), visited, min_length, max_length, grid, found_words)
+            visited.remove((nx, ny))
+
+def word_search(grid, min_length=1, max_length=15):
     found_words = set()
-    grid_size = len(grid)
 
-    def dfs(x, y, path, visited):
-        word = ''.join(grid[i][j] for i, j in path)
-        if len(word) > 1 and is_valid_word(word):
-            found_words.add(word)
-        if len(word) > max(len(w) for w in english_words):
-            return
-        for nx, ny in get_neighbors(x, y, grid_size):
-            if (nx, ny) not in visited:
-                dfs(nx, ny, path + [(nx, ny)], visited | {(nx, ny)})
+    # Process the grid as a 4x4 matrix (2D list)
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            
+            visited = set([(i, j)])
+            find_words(i, j, grid[i][j].lower(), visited, min_length, max_length, grid, found_words)
 
-    for i in range(grid_size):
-        for j in range(grid_size):
-            dfs(i, j, [(i, j)], {(i, j)})
+    return found_words
 
-    return sorted(found_words)
+# Function to check if a word is related to a theme using ConceptNet (caching and optimization)
+@lru_cache(maxsize=10000)  # Cache results for efficiency
+def is_word_related_to_theme_conceptnet(word, theme, threshold=0.5):
+    url = f"http://api.conceptnet.io/query?node=/c/en/{word}&other=/c/en/{theme}"
+    response = requests.get(url).json()
+    return len(response.get('edges', [])) > 0
+
+# Function to filter words based on their relation to the theme using multithreading
+def filter_words_by_theme(words_list, theme, threshold=0.5):
+    related_words = []
+    
+    # Using ThreadPoolExecutor to parallelize the checks
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(is_word_related_to_theme_conceptnet, word, theme, threshold): word for word in words_list}
+        for future in as_completed(futures):
+            word = futures[future]
+            if future.result():  # If the word is related to the theme
+                related_words.append(word)
+                
+    return related_words
 
 @app.route('/solve', methods=['POST'])
 def solve():
-    try:
-        # Log raw request data to check if it's empty or malformed
-        print("Request data (raw):", request.data.decode('utf-8'))
-        
-        data = request.get_json()
-        print("Decoded JSON data:", data)
+    # Get the grid of letters and word length range from the request
+    data = request.json
+    grid = data.get("grid", [])
+    min_length = data.get("min_length", 3)
+    max_length = data.get("min_length", 16)
 
-        if not data or 'grid' not in data:
-            raise ValueError("Grid is missing or not in the correct format.")
+    theme = data.get("theme", "")  # Extract the theme from the frontend request
 
-        grid = data.get('grid')
-        if not isinstance(grid, list):
-            raise ValueError("Grid must be a list.")
+    if not theme:
+        return jsonify({"error": "Theme is required"}), 400  # Return an error if the theme is not provided
 
-        grid_size = len(grid)
-        if any(len(row) != grid_size for row in grid):
-            raise ValueError("Grid must be square.")
+    # Convert the flat grid (1D array) into a 2D grid (4x4)
+    grid_2d = [grid[i:i+4] for i in range(0, len(grid), 4)]
 
-        words = find_words(grid)
-        print("Found words:", words)
+    # Print the grid to the console (for debugging)
+    print("Received grid:")
+    for row in grid_2d:
+        print(row)
 
-        return jsonify({"words": words})
+    # Call the word search function to find valid words
+    found_words = word_search(grid_2d, min_length, max_length)
+    filtered_words = filter_words_by_theme(found_words, theme)
 
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return jsonify({"error": "Error solving the puzzle. Please try again."}), 500
-
-
+    # Return the valid words as a response
+    return jsonify({"words": list(filtered_words)})
 
 if __name__ == '__main__':
     app.run(debug=True)
